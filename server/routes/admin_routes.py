@@ -4,13 +4,18 @@ from models import db
 from models.user import User
 from models.product import Product
 from models.order import Order
+from models.order_item import OrderItem
 from models.flagged_activity import FlaggedActivity
 from models.affiliate_profile import AffiliateProfile
 from models.affiliate_click import AffiliateClick
 from models.affiliate_link import AffiliateLink
 from models.profile import Profile
+from models.seller_profile import SellerProfile
+from models.category import Category
 from utils.auth_helpers import admin_required
 import logging
+from datetime import datetime, timedelta
+from sqlalchemy import func, desc
 
 logger = logging.getLogger(__name__)
 
@@ -218,3 +223,273 @@ def activate_affiliate(affiliate_id):
         db.session.rollback()
         logger.error(f"Error activating affiliate: {str(e)}")
         return jsonify({'message': f'Error activating affiliate: {str(e)}'}), 500
+
+@admin_bp.route('/products', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_admin_products():
+    try:
+        # Get query parameters
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        status = request.args.get('status', None)
+        category_id = request.args.get('category_id', None)
+        search_term = request.args.get('search', None)
+        sort_by = request.args.get('sort_by', 'created_at')
+        sort_order = request.args.get('sort_order', 'desc')
+        
+        # Start with base query
+        query = Product.query
+        
+        # Apply filters
+        if status:
+            if status == 'active':
+                query = query.filter(Product.status == 'active')
+            elif status == 'inactive':
+                query = query.filter(Product.status == 'inactive')
+            elif status == 'pending':
+                query = query.filter(Product.is_approved == False)
+        
+        if category_id:
+            query = query.filter(Product.category_id == category_id)
+        
+        if search_term:
+            query = query.filter(Product.name.ilike(f'%{search_term}%'))
+        
+        # Apply sorting
+        if sort_by == 'price':
+            if sort_order == 'asc':
+                query = query.order_by(Product.price.asc())
+            else:
+                query = query.order_by(Product.price.desc())
+        elif sort_by == 'created_at':
+            if sort_order == 'asc':
+                query = query.order_by(Product.created_at.asc())
+            else:
+                query = query.order_by(Product.created_at.desc())
+        elif sort_by == 'name':
+            if sort_order == 'asc':
+                query = query.order_by(Product.name.asc())
+            else:
+                query = query.order_by(Product.name.desc())
+        
+        # Paginate results
+        paginated_products = query.paginate(page=page, per_page=per_page, error_out=False)
+        
+        # Get categories for filter options
+        categories = Category.query.all()
+        category_options = [{'id': cat.id, 'name': cat.name} for cat in categories]
+        
+        # Count products by status for summary
+        total_products = Product.query.count()
+        active_products = Product.query.filter_by(status='active').count()
+        pending_products = Product.query.filter_by(is_approved=False).count()
+        
+        return jsonify({
+            'products': [product.to_dict() for product in paginated_products.items],
+            'pagination': {
+                'total_items': paginated_products.total,
+                'per_page': per_page,
+                'current_page': page,
+                'total_pages': paginated_products.pages
+            },
+            'filters': {
+                'categories': category_options,
+                'statuses': ['all', 'active', 'inactive', 'pending']
+            },
+            'summary': {
+                'total': total_products,
+                'active': active_products,
+                'pending': pending_products,
+                'inactive': total_products - active_products
+            }
+        }), 200
+    except Exception as e:
+        logger.error(f"Error fetching admin products: {str(e)}")
+        return jsonify({'message': 'Failed to fetch products'}), 500
+
+@admin_bp.route('/users', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_admin_users():
+    try:
+        # Get query parameters
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        role = request.args.get('role', None)
+        search_term = request.args.get('search', None)
+        sort_by = request.args.get('sort_by', 'created_at')
+        sort_order = request.args.get('sort_order', 'desc')
+        
+        # Start with base query
+        query = User.query
+        
+        # Apply filters
+        if role and role != 'all':
+            query = query.filter(User.role == role)
+        
+        if search_term:
+            query = query.filter(
+                (User.email.ilike(f'%{search_term}%')) | 
+                (User.first_name.ilike(f'%{search_term}%')) | 
+                (User.last_name.ilike(f'%{search_term}%'))
+            )
+        
+        # Apply sorting
+        if sort_by == 'email':
+            if sort_order == 'asc':
+                query = query.order_by(User.email.asc())
+            else:
+                query = query.order_by(User.email.desc())
+        elif sort_by == 'created_at':
+            if sort_order == 'asc':
+                query = query.order_by(User.created_at.asc())
+            else:
+                query = query.order_by(User.created_at.desc())
+        elif sort_by == 'name':
+            if sort_order == 'asc':
+                query = query.order_by(User.first_name.asc())
+            else:
+                query = query.order_by(User.first_name.desc())
+        
+        # Paginate results
+        paginated_users = query.paginate(page=page, per_page=per_page, error_out=False)
+        
+        # Count users by role for summary
+        total_users = User.query.count()
+        admin_users = User.query.filter_by(role='admin').count()
+        seller_users = User.query.filter_by(role='seller').count()
+        affiliate_users = User.query.filter_by(role='affiliate').count()
+        customer_users = User.query.filter_by(role='customer').count()
+        
+        return jsonify({
+            'users': [user.to_dict() for user in paginated_users.items],
+            'pagination': {
+                'total_items': paginated_users.total,
+                'per_page': per_page,
+                'current_page': page,
+                'total_pages': paginated_users.pages
+            },
+            'filters': {
+                'roles': ['all', 'admin', 'seller', 'affiliate', 'customer']
+            },
+            'summary': {
+                'total': total_users,
+                'admin': admin_users,
+                'seller': seller_users,
+                'affiliate': affiliate_users,
+                'customer': customer_users
+            }
+        }), 200
+    except Exception as e:
+        logger.error(f"Error fetching admin users: {str(e)}")
+        return jsonify({'message': 'Failed to fetch users'}), 500
+
+@admin_bp.route('/reports/sales', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_sales_reports():
+    try:
+        # Get query parameters
+        period = request.args.get('period', 'week')  # week, month, year
+        
+        # Calculate date ranges
+        today = datetime.now().date()
+        if period == 'week':
+            start_date = today - timedelta(days=7)
+            date_format = '%Y-%m-%d'
+            group_by = func.date(Order.created_at)
+        elif period == 'month':
+            start_date = today - timedelta(days=30)
+            date_format = '%Y-%m-%d'
+            group_by = func.date(Order.created_at)
+        else:  # year
+            start_date = today - timedelta(days=365)
+            date_format = '%Y-%m'
+            group_by = func.strftime('%Y-%m', Order.created_at)
+        
+        # Get sales data grouped by date
+        sales_data = db.session.query(
+            group_by.label('date'),
+            func.sum(Order.total_amount).label('total_sales'),
+            func.count(Order.id).label('order_count')
+        ).filter(
+            Order.created_at >= start_date
+        ).group_by(
+            'date'
+        ).order_by(
+            desc('date')
+        ).all()
+        
+        # Format results
+        formatted_data = [{
+            'date': item.date.strftime(date_format) if hasattr(item.date, 'strftime') else item.date,
+            'total_sales': float(item.total_sales) if item.total_sales else 0,
+            'order_count': item.order_count
+        } for item in sales_data]
+        
+        # Get top selling products
+        top_products = db.session.query(
+            Product.id,
+            Product.name,
+            func.sum(OrderItem.quantity).label('total_sold'),
+            func.sum(OrderItem.price_per_unit * OrderItem.quantity).label('total_revenue')
+        ).join(
+            OrderItem, OrderItem.product_id == Product.id
+        ).group_by(
+            Product.id
+        ).order_by(
+            desc('total_sold')
+        ).limit(5).all()
+        
+        top_products_data = [{
+            'id': item.id,
+            'name': item.name,
+            'total_sold': item.total_sold,
+            'total_revenue': float(item.total_revenue) if item.total_revenue else 0
+        } for item in top_products]
+        
+        # Get sales by category
+        sales_by_category = db.session.query(
+            Category.name,
+            func.sum(OrderItem.quantity).label('total_sold'),
+            func.sum(OrderItem.price_per_unit * OrderItem.quantity).label('total_revenue')
+        ).join(
+            Product, Product.id == OrderItem.product_id
+        ).join(
+            Category, Category.id == Product.category_id
+        ).join(
+            Order, Order.id == OrderItem.order_id
+        ).filter(
+            Order.created_at >= start_date
+        ).group_by(
+            Category.name
+        ).order_by(
+            desc('total_revenue')
+        ).all()
+        
+        category_data = [{
+            'name': item.name,
+            'total_sold': item.total_sold,
+            'total_revenue': float(item.total_revenue) if item.total_revenue else 0
+        } for item in sales_by_category]
+        
+        # Calculate summary metrics
+        total_sales = sum(item['total_sales'] for item in formatted_data)
+        total_orders = sum(item['order_count'] for item in formatted_data)
+        avg_order_value = total_sales / total_orders if total_orders > 0 else 0
+        
+        return jsonify({
+            'sales_over_time': formatted_data,
+            'top_products': top_products_data,
+            'sales_by_category': category_data,
+            'summary': {
+                'total_sales': total_sales,
+                'total_orders': total_orders,
+                'avg_order_value': avg_order_value,
+                'period': period
+            }
+        }), 200
+    except Exception as e:
+        logger.error(f"Error generating sales report: {str(e)}")
+        return jsonify({'message': 'Failed to generate sales report'}), 500

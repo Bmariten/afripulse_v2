@@ -90,6 +90,50 @@ def get_link_performance():
     links = AffiliateLink.query.filter_by(user_id=user_id).all()
     return jsonify([link.to_dict() for link in links]), 200
 
+# Endpoint to get top performing affiliate links
+@affiliate_bp.route('/top-performing-links', methods=['GET'])
+@jwt_required()
+@affiliate_required
+def get_top_performing_links():
+    user_id = get_jwt_identity()
+    
+    try:
+        # Get the affiliate profile
+        user = User.query.get(user_id)
+        if not user or not user.affiliate_profile:
+            return jsonify({'message': 'Affiliate profile not found'}), 404
+            
+        # Get top 5 links by earnings
+        top_links = AffiliateLink.query.filter_by(user_id=user_id)\
+            .order_by(AffiliateLink.earnings.desc())\
+            .limit(5).all()
+        
+        # Format the links data with product info
+        formatted_links = []
+        for link in top_links:
+            product = Product.query.get(link.product_id)
+            if product:
+                formatted_links.append({
+                    'id': link.id,
+                    'code': link.code,
+                    'clicks': link.clicks,
+                    'conversions': link.conversions,
+                    'earnings': float(link.earnings) if link.earnings else 0.0,
+                    'conversion_rate': (link.conversions / link.clicks * 100) if link.clicks > 0 else 0,
+                    'product': {
+                        'id': product.id,
+                        'name': product.name,
+                        'price': float(product.price),
+                        'image': product.images[0] if product.images else None
+                    },
+                    'created_at': link.created_at.isoformat() if link.created_at else None
+                })
+        
+        return jsonify(formatted_links), 200
+    except Exception as e:
+        logger.error(f"Error fetching top performing links: {str(e)}")
+        return jsonify({'message': f'Error fetching top performing links: {str(e)}'}), 500
+
 # Endpoint to get all affiliate links for the logged-in user
 @affiliate_bp.route('/links', methods=['GET'])
 @jwt_required()
@@ -137,47 +181,79 @@ def track_link_click(code):
     frontend_url = f'http://localhost:8080/products/{product.slug}'
     return redirect(frontend_url)
 
-# Endpoint to update affiliate profile
-@affiliate_bp.route('/profile', methods=['PUT'])
+# Endpoint to get or update affiliate profile
+@affiliate_bp.route('/profile', methods=['GET', 'PUT'])
 @jwt_required()
 @affiliate_required
-def update_affiliate_profile():
+def affiliate_profile():
     user_id = get_jwt_identity()
-    data = request.get_json()
     
-    # Get the user and their affiliate profile
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({'message': 'User not found'}), 404
+    # Handle GET request
+    if request.method == 'GET':
+        try:
+            # Get the user with all related profiles
+            user = User.query.get(user_id)
+            if not user:
+                return jsonify({'message': 'User not found'}), 404
+                
+            # Get affiliate profile
+            affiliate_profile = user.affiliate_profile
+            if not affiliate_profile:
+                return jsonify({'message': 'Affiliate profile not found'}), 404
+            
+            # Return the user data with full profile information
+            user_data = user.to_dict()
+            
+            # Add profile data if it exists
+            if user.profile:
+                user_data['profile'] = user.profile.to_dict()
+            
+            # Add affiliate profile
+            user_data['affiliate_profile'] = affiliate_profile.to_dict()
+            
+            return jsonify(user_data), 200
+        except Exception as e:
+            logger.error(f"Error fetching affiliate profile: {str(e)}")
+            return jsonify({'message': f'Error fetching affiliate profile: {str(e)}'}), 500
+    
+    # Handle PUT request
+    elif request.method == 'PUT':
+        user_id = get_jwt_identity()
+        data = request.get_json()
+    
+        # Get the user and their affiliate profile
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'message': 'User not found'}), 404
+            
+        affiliate_profile = user.affiliate_profile
+        if not affiliate_profile:
+            return jsonify({'message': 'Affiliate profile not found'}), 404
         
-    affiliate_profile = user.affiliate_profile
-    if not affiliate_profile:
-        return jsonify({'message': 'Affiliate profile not found'}), 404
-    
-    # Update affiliate profile fields
-    if data.get('website') is not None:
-        affiliate_profile.website = data['website']
-    if data.get('social_media') is not None:
-        affiliate_profile.social_media = data['social_media']
-    if data.get('niche') is not None:
-        affiliate_profile.niche = data['niche']
-    if data.get('paypal_email') is not None:
-        affiliate_profile.paypal_email = data['paypal_email']
-    if data.get('bank_account') is not None:
-        affiliate_profile.bank_account = data['bank_account']
-    
-    # Save changes
-    db.session.commit()
-    
-    # Return the updated user data with full profile information
-    user_data = user.to_dict()
-    
-    # Add profile data if it exists
-    if user.profile:
-        user_data['profile'] = user.profile.to_dict()
-    
-    # Add affiliate profile since user is an affiliate
-    if user.affiliate_profile:
-        user_data['affiliate_profile'] = user.affiliate_profile.to_dict()
-    
-    return jsonify(user_data), 200
+        # Update affiliate profile fields
+        if data.get('website') is not None:
+            affiliate_profile.website = data['website']
+        if data.get('social_media') is not None:
+            affiliate_profile.social_media = data['social_media']
+        if data.get('niche') is not None:
+            affiliate_profile.niche = data['niche']
+        if data.get('paypal_email') is not None:
+            affiliate_profile.paypal_email = data['paypal_email']
+        if data.get('bank_account') is not None:
+            affiliate_profile.bank_account = data['bank_account']
+        
+        # Save changes
+        db.session.commit()
+        
+        # Return the updated user data with full profile information
+        user_data = user.to_dict()
+        
+        # Add profile data if it exists
+        if user.profile:
+            user_data['profile'] = user.profile.to_dict()
+        
+        # Add affiliate profile since user is an affiliate
+        if user.affiliate_profile:
+            user_data['affiliate_profile'] = user.affiliate_profile.to_dict()
+        
+        return jsonify(user_data), 200

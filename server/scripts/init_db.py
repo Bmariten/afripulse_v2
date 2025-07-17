@@ -28,7 +28,7 @@ def create_admin_user():
             email=admin_email,
             password=hashed_password,
             role='admin',
-            is_verified=True
+            is_email_verified=True
         )
         
         db.session.add(admin)
@@ -144,7 +144,7 @@ def create_demo_users():
                 email=user_data['email'],
                 password=hashed_password,
                 role=user_data['role'],
-                is_verified=True
+                is_email_verified=True
             )
             
             db.session.add(user)
@@ -173,7 +173,7 @@ def create_demo_users():
                     business_address=seller_data.get('business_address', ''),
                     business_phone=seller_data.get('business_phone', ''),
                     business_email=seller_data.get('business_email', ''),
-                    is_verified=seller_data.get('is_verified', False)
+                    verified=seller_data.get('is_verified', False)
                 )
                 
                 db.session.add(seller_profile)
@@ -188,7 +188,8 @@ def create_demo_users():
                     social_media=affiliate_data.get('social_media', ''),
                     niche=affiliate_data.get('niche', ''),
                     commission_rate=affiliate_data.get('commission_rate', 5.0),
-                    payment_details=affiliate_data.get('payment_details', '')
+                    paypal_email=affiliate_data.get('payment_details', '').split(': ')[1] if ': ' in affiliate_data.get('payment_details', '') else '',
+                    bank_account=''
                 )
                 
                 db.session.add(affiliate_profile)
@@ -219,8 +220,8 @@ def create_demo_products():
             'name': 'Wireless Bluetooth Earbuds',
             'description': 'High-quality wireless earbuds with noise cancellation and long battery life.',
             'price': 49.99,
-            'sale_price': 39.99,
-            'stock_quantity': 100,
+            'discount_price': 39.99,
+            'inventory_count': 100,
             'category_id': electronics.id if electronics else None,
             'subcategory': 'Audio',
             'featured': True,
@@ -230,8 +231,8 @@ def create_demo_products():
             'name': 'Smart Watch',
             'description': 'Track your fitness, receive notifications, and more with this stylish smart watch.',
             'price': 99.99,
-            'sale_price': None,
-            'stock_quantity': 50,
+            'discount_price': None,
+            'inventory_count': 50,
             'category_id': electronics.id if electronics else None,
             'subcategory': 'Wearables',
             'featured': True,
@@ -241,8 +242,8 @@ def create_demo_products():
             'name': 'Men\'s Casual T-Shirt',
             'description': 'Comfortable cotton t-shirt perfect for everyday wear.',
             'price': 19.99,
-            'sale_price': 14.99,
-            'stock_quantity': 200,
+            'discount_price': 14.99,
+            'inventory_count': 200,
             'category_id': fashion.id if fashion else None,
             'subcategory': 'Men\'s Clothing',
             'featured': False,
@@ -252,8 +253,8 @@ def create_demo_products():
             'name': 'Women\'s Running Shoes',
             'description': 'Lightweight and comfortable running shoes with excellent support.',
             'price': 79.99,
-            'sale_price': None,
-            'stock_quantity': 75,
+            'discount_price': None,
+            'inventory_count': 75,
             'category_id': fashion.id if fashion else None,
             'subcategory': 'Women\'s Shoes',
             'featured': True,
@@ -263,8 +264,8 @@ def create_demo_products():
             'name': 'Scented Candle Set',
             'description': 'Set of 3 scented candles to create a relaxing atmosphere in your home.',
             'price': 24.99,
-            'sale_price': 19.99,
-            'stock_quantity': 150,
+            'discount_price': 19.99,
+            'inventory_count': 150,
             'category_id': home.id if home else None,
             'subcategory': 'Home Decor',
             'featured': False,
@@ -277,17 +278,20 @@ def create_demo_products():
         product = Product.query.filter_by(name=product_data['name'], seller_id=seller.id).first()
         
         if not product:
+            # Generate slug from product name
+            slug = product_data['name'].lower().replace("'", '').replace(' ', '-')
+            
             # Create product
             product = Product(
                 id=str(uuid.uuid4()),
                 seller_id=seller.id,
                 name=product_data['name'],
+                slug=slug,
                 description=product_data['description'],
                 price=product_data['price'],
-                sale_price=product_data['sale_price'],
-                stock_quantity=product_data['stock_quantity'],
+                discount_price=product_data['discount_price'],
+                inventory_count=product_data['inventory_count'],
                 category_id=product_data['category_id'],
-                subcategory=product_data['subcategory'],
                 featured=product_data['featured'],
                 status=product_data['status']
             )

@@ -388,6 +388,13 @@ def delete_product(product_id):
             except Exception as img_e:
                 print(f"Error deleting image file {image.image_url}: {img_e}")
 
+        # First, delete any affiliate links associated with this product
+        from models.affiliate_link import AffiliateLink
+        affiliate_links = AffiliateLink.query.filter_by(product_id=product_id).all()
+        for link in affiliate_links:
+            db.session.delete(link)
+        
+        # Then delete the product
         db.session.delete(product)
         db.session.commit()
 

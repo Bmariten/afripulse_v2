@@ -208,11 +208,23 @@ def get_dashboard_stats():
             total_affiliates = User.query.filter_by(role='affiliate').count()
             total_revenue = db.session.query(db.func.sum(Order.total_amount)).scalar() or 0
             
+            # Additional stats for enhanced dashboard
+            active_listings = Product.query.filter_by(status='active').count()
+            
+            # Calculate conversion rate (orders / product views)
+            # This is a simplified example - in a real app, you'd track actual views
+            total_orders = Order.query.count()
+            # Assuming we have 10x more views than orders as a placeholder
+            estimated_views = total_orders * 10 if total_orders > 0 else 1
+            conversion_rate = round((total_orders / estimated_views) * 100, 2) if estimated_views > 0 else 0
+            
             return jsonify({
                 'totalSellers': total_sellers,
                 'totalProducts': total_products,
                 'totalAffiliates': total_affiliates,
-                'totalRevenue': float(total_revenue)
+                'totalRevenue': float(total_revenue),
+                'activeListings': active_listings,
+                'conversionRate': conversion_rate
             }), 200
         elif user.role == 'seller':
             # Redirect to seller stats endpoint

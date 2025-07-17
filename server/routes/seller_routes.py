@@ -103,6 +103,39 @@ def get_seller_products():
     products = Product.query.filter_by(seller_id=seller_profile.id).all()
     return jsonify([product.to_dict() for product in products]), 200
 
+@seller_bp.route('/top-products', methods=['GET'])
+@jwt_required()
+@seller_required
+def get_top_products():
+    user_id = get_jwt_identity()
+    
+    try:
+        # Get the seller profile
+        seller_profile = SellerProfile.query.filter_by(user_id=user_id).first()
+        if not seller_profile:
+            return jsonify({'message': 'Seller profile not found'}), 404
+            
+        # Get products
+        products = Product.query.filter_by(seller_id=seller_profile.id).order_by(Product.created_at.desc()).limit(5).all()
+        
+        # Format the products data
+        top_products = []
+        for product in products:
+            top_products.append({
+                'id': product.id,
+                'name': product.name,
+                'price': float(product.price),
+                'image': product.images[0] if product.images else None,
+                'inventory_count': product.inventory_count,
+                'status': product.status,
+                'created_at': product.created_at.isoformat() if product.created_at else None
+            })
+        
+        return jsonify(top_products), 200
+    except Exception as e:
+        logger.error(f"Error fetching top products: {str(e)}")
+        return jsonify({'message': f'Error fetching top products: {str(e)}'}), 500
+
 @seller_bp.route('/insights', methods=['GET'])
 @jwt_required()
 @seller_required
@@ -174,44 +207,76 @@ def get_seller_orders():
     orders = Order.query.join(Order.items).join(Product).filter(Product.seller_id == seller_profile.id).all()
     return jsonify([order.to_dict() for order in orders]), 200
 
-@seller_bp.route('/profile', methods=['PUT'])
+@seller_bp.route('/profile', methods=['GET', 'PUT'])
 @jwt_required()
 @seller_required
-def update_seller_profile():
+def seller_profile():
     user_id = get_jwt_identity()
-    logger.info(f"Updating seller profile for user {user_id}")
-    data = request.get_json()
     
-    try:
-        # Get the user with all related profiles
-        user = User.query.get(user_id)
-        if not user:
-            return jsonify({'message': 'User not found'}), 404
+    # Handle GET request
+    if request.method == 'GET':
+        try:
+            # Get the user with all related profiles
+            user = User.query.get(user_id)
+            if not user:
+                return jsonify({'message': 'User not found'}), 404
+                
+            # Get seller profile
+            seller_profile = user.seller_profile
+            if not seller_profile:
+                return jsonify({'message': 'Seller profile not found'}), 404
             
-        # Get or create seller profile
-        seller_profile = user.seller_profile
-        if not seller_profile:
-            return jsonify({'message': 'Seller profile not found'}), 404
+            # Return the user data with full profile information
+            user_data = user.to_dict()
+            
+            # Add profile data if it exists
+            if user.profile:
+                user_data['profile'] = user.profile.to_dict()
+            
+            # Add seller profile
+            user_data['seller_profile'] = seller_profile.to_dict()
+            
+            return jsonify(user_data), 200
+        except Exception as e:
+            logger.error(f"Error fetching seller profile: {str(e)}")
+            return jsonify({'message': f'Error fetching seller profile: {str(e)}'}), 500
+    
+    # Handle PUT request
+    elif request.method == 'PUT':
+        user_id = get_jwt_identity()
+        logger.info(f"Updating seller profile for user {user_id}")
+        data = request.get_json()
         
-        # Update seller profile fields
-        for key, value in data.items():
-            if hasattr(seller_profile, key):
-                setattr(seller_profile, key, value)
-        
-        db.session.commit()
-        
-        # Return the updated user data with full profile information
-        user_data = user.to_dict()
-        
-        # Add profile data if it exists
-        if user.profile:
-            user_data['profile'] = user.profile.to_dict()
-        
-        # Add seller profile
-        user_data['seller_profile'] = seller_profile.to_dict()
-        
-        return jsonify(user_data), 200
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error updating seller profile: {str(e)}")
-        return jsonify({'message': f'Error updating seller profile: {str(e)}'}), 500
+        try:
+            # Get the user with all related profiles
+            user = User.query.get(user_id)
+            if not user:
+                return jsonify({'message': 'User not found'}), 404
+                
+            # Get or create seller profile
+            seller_profile = user.seller_profile
+            if not seller_profile:
+                return jsonify({'message': 'Seller profile not found'}), 404
+            
+            # Update seller profile fields
+            for key, value in data.items():
+                if hasattr(seller_profile, key):
+                    setattr(seller_profile, key, value)
+            
+            db.session.commit()
+            
+            # Return the updated user data with full profile information
+            user_data = user.to_dict()
+            
+            # Add profile data if it exists
+            if user.profile:
+                user_data['profile'] = user.profile.to_dict()
+            
+            # Add seller profile
+            user_data['seller_profile'] = seller_profile.to_dict()
+            
+            return jsonify(user_data), 200
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error updating seller profile: {str(e)}")
+            return jsonify({'message': f'Error updating seller profile: {str(e)}'}), 500
