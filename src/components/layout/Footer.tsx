@@ -53,10 +53,10 @@ const Footer = () => {
                 <Link to={productsLink} className="text-gray-600 hover:text-primary">Products</Link>
               </li>
               <li>
-                <a href="#" className="text-gray-600 hover:text-primary">About Us</a>
+                <Link to="/AboutUs" className="text-gray-600 hover:text-primary">About Us</Link>
               </li>
               <li>
-                <a href="#" className="text-gray-600 hover:text-primary">Contact</a>
+                <Link to="/Contact" className="text-gray-600 hover:text-primary">Contact</Link>
               </li>
             </ul>
           </div>
@@ -71,10 +71,10 @@ const Footer = () => {
                 <Link to="/affiliate/signup" className="text-gray-600 hover:text-primary">Become an Affiliate</Link>
               </li>
               <li>
-                <a href="#" className="text-gray-600 hover:text-primary">Seller Resources</a>
+                <Link to="/seller/SellerResources" className="text-gray-600 hover:text-primary">Seller Resources</Link>
               </li>
               <li>
-                <a href="#" className="text-gray-600 hover:text-primary">Affiliate Resources</a>
+                <Link to="/affiliate/AffiliateResources" className="text-gray-600 hover:text-primary">Affiliate Resources</Link>
               </li>
             </ul>
           </div>
@@ -83,16 +83,16 @@ const Footer = () => {
             <h3 className="text-lg font-semibold mb-4">Legal</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <a href="#" className="text-gray-600 hover:text-primary">Terms of Service</a>
+                <Link to="/legal/TermsOfService" className="text-gray-600 hover:text-primary">Terms of Service</Link>
               </li>
               <li>
-                <a href="#" className="text-gray-600 hover:text-primary">Privacy Policy</a>
+                <Link to="/legal/PrivacyPolicy" className="text-gray-600 hover:text-primary">Privacy Policy</Link>
               </li>
               <li>
-                <a href="#" className="text-gray-600 hover:text-primary">Refund Policy</a>
+                <Link to="/legal/RefundPolicy" className="text-gray-600 hover:text-primary">Refund Policy</Link>
               </li>
               <li>
-                <a href="#" className="text-gray-600 hover:text-primary">Cookie Policy</a>
+                <Link to="/legal/CookiePolicy" className="text-gray-600 hover:text-primary">Cookie Policy</Link>
               </li>
             </ul>
           </div>

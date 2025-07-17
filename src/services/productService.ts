@@ -56,6 +56,30 @@ export const fetchProducts = async (options: {
   }
 };
 
+// Fetch products specifically for the affiliate marketplace
+export const fetchAffiliateMarketplaceProducts = async (options: {
+  category?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+} = {}): Promise<{ data: Product[], count: number }> => {
+  try {
+    const params = { ...options };
+    // Use the authenticated API instance since this requires affiliate access
+    const response = await api.get(`/for-affiliates`, { params });
+    console.log('Affiliate marketplace products:', response.data);
+    
+    // The API returns an array of products
+    return {
+      data: Array.isArray(response.data) ? response.data : [],
+      count: Array.isArray(response.data) ? response.data.length : 0
+    };
+  } catch (error) {
+    console.error('Error fetching affiliate marketplace products:', error);
+    return { data: [], count: 0 };
+  }
+};
+
 export const fetchProductBySlug = async (slug: string): Promise<Product | null> => {
   try {
     // Use the publicApi instance for public requests

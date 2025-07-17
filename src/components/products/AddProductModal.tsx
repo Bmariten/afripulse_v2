@@ -15,7 +15,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSu
   const isEditMode = !!productToEdit;
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-[90vw] md:max-w-[800px] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{isEditMode ? 'Edit Product' : 'Add a New Product'}</DialogTitle>
           <DialogDescription>
@@ -24,7 +24,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSu
               : 'Fill out the details below to add a new product to your store. All products are subject to review.'}
           </DialogDescription>
         </DialogHeader>
-        <div className="mt-4 max-h-[75vh] overflow-y-auto pr-6">
+        <div className="mt-4 max-h-[70vh] overflow-y-auto pr-2 md:pr-6">
             <ProductForm onSubmit={onSubmit} loading={loading} productToEdit={productToEdit} />
         </div>
       </DialogContent>

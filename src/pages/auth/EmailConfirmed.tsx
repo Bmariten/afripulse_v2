@@ -4,6 +4,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import MainLayout from "@/components/layout/MainLayout";
 import { useToast } from "@/components/ui/use-toast";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { CheckCircle, Loader2 } from "lucide-react";
 
 const EmailConfirmed = () => {
   const navigate = useNavigate();
@@ -66,21 +68,74 @@ const EmailConfirmed = () => {
     checkUser();
   }, []);
 
+  // Get the appropriate gradient based on user type
+  const getGradient = () => {
+    switch (userType) {
+      case "seller": return "from-blue-50 to-indigo-100";
+      case "affiliate": return "from-green-50 to-emerald-100";
+      case "admin": return "from-purple-50 to-violet-100";
+      default: return "from-blue-50 to-indigo-100";
+    }
+  };
+
+  // Get the appropriate button class based on user type
+  const getButtonClass = () => {
+    switch (userType) {
+      case "seller": return "bg-blue-600 hover:bg-blue-700";
+      case "affiliate": return "bg-green-600 hover:bg-green-700";
+      case "admin": return "bg-purple-600 hover:bg-purple-700";
+      default: return "bg-blue-600 hover:bg-blue-700";
+    }
+  };
+
+  // Get the appropriate icon color based on user type
+  const getIconColor = () => {
+    switch (userType) {
+      case "seller": return "text-blue-600";
+      case "affiliate": return "text-green-600";
+      case "admin": return "text-purple-600";
+      default: return "text-blue-600";
+    }
+  };
+
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-16 text-center">
-        <div className="max-w-md mx-auto">
-          <div className="mb-8">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-              <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+      <div className={`min-h-[80vh] flex items-center justify-center p-4 bg-gradient-to-br ${getGradient()}`}>
+        <Card className="w-full max-w-md shadow-lg border-0">
+          <CardContent className="pt-6 pb-4 text-center">
+            <div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-6 bg-white shadow-sm">
+              {user ? (
+                <CheckCircle className={`h-10 w-10 ${getIconColor()}`} />
+              ) : (
+                <Loader2 className={`h-10 w-10 ${getIconColor()} animate-spin`} />
+              )}
             </div>
-          </div>
-          <h1 className="text-2xl font-bold mb-4">Email Confirmed!</h1>
-          <p className="text-gray-600 mb-8">Your email address has been successfully confirmed. You will be redirected to the login page shortly.</p>
-          <Button onClick={() => navigate(`/${userType}/login`, { replace: true })}>
-            Go to Login
-          </Button>
-        </div>
+            
+            <h1 className="text-2xl font-bold mb-3">Email Confirmed!</h1>
+            
+            <p className="text-gray-600 mb-6">
+              Your email address has been successfully confirmed. 
+              {!user ? "Checking your account..." : "You will be redirected to complete your profile."}
+            </p>
+          </CardContent>
+          
+          <CardFooter className="flex justify-center pb-6">
+            <Button 
+              onClick={() => navigate(`/${userType}/login`, { replace: true })} 
+              className={`${getButtonClass()} text-white px-8 py-2`}
+              disabled={!user}
+            >
+              {!user ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Checking Account
+                </>
+              ) : (
+                "Go to Login"
+              )}
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     </MainLayout>
   );

@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import ProductForm from '@/components/products/ProductForm';
 import { createProduct } from '@/services/productService';
 import { useToast } from '@/hooks/use-toast';
+import { useLocation } from 'react-router-dom';
 
 type ProductStatus = 'pending' | 'approved' | 'rejected';
 
@@ -49,6 +50,7 @@ const AdminProducts = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const location = useLocation();
 
   async function fetchProducts() {
     setLoading(true);
@@ -74,7 +76,7 @@ const AdminProducts = () => {
         seller: item.sellerBusinessName || item.seller_name || '',
         category: item.category ? (typeof item.category === 'string' ? item.category : item.category.name) : '',
         price: item.price ? `$${item.price}` : '',
-        status: item.is_approved === 1 ? 'approved' : (item.status === 'rejected' ? 'rejected' : 'pending'),
+        status: (item.is_approved === 1 ? 'approved' : (item.status === 'rejected' ? 'rejected' : 'pending')) as ProductStatus,
         dateSubmitted: item.created_at ? new Date(item.created_at).toLocaleDateString() : '',
       }));
       console.log('Processed products:', fetchedProducts);
@@ -89,7 +91,13 @@ const AdminProducts = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+    
+    // Check if we should open the Add Product modal based on URL parameters
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('action') === 'add') {
+      setIsModalOpen(true);
+    }
+  }, [location]);
 
   const handleProductSubmit = async (productData: any) => {
     setIsSubmitting(true);
@@ -187,11 +195,13 @@ const AdminProducts = () => {
                   <DialogTrigger asChild>
                     <Button>Add Product</Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[625px]">
+                  <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Add New Product</DialogTitle>
                     </DialogHeader>
-                    <ProductForm onSubmit={handleProductSubmit} loading={isSubmitting} />
+                    <div className="py-4">
+                      <ProductForm onSubmit={handleProductSubmit} loading={isSubmitting} productToEdit={null} />
+                    </div>
                   </DialogContent>
                 </Dialog>
               </div>

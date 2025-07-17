@@ -1,9 +1,9 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, ArrowRight, Sparkles, Heart, Home } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Category {
@@ -15,10 +15,17 @@ interface Category {
   bg_color: string;
 }
 
+// Simple animation component since we don't have framer-motion
+const MotionDiv = ({ children, className, ...props }: any) => (
+  <div className={className} {...props}>{children}</div>
+);
+
 const FeaturedCategories = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState(0);
   const { isAuthenticated } = useAuth();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -40,7 +47,7 @@ const FeaturedCategories = () => {
     fetchCategories();
   }, [isAuthenticated]);
 
-  // Fallback categories with better image options
+  // Enhanced fallback categories with better image options and icons
   const defaultCategories = [
     {
       id: '1',
@@ -48,7 +55,9 @@ const FeaturedCategories = () => {
       description: 'Discover premium products and resources for your health and wellness journey.',
       image_url: 'https://images.unsplash.com/photo-1511688878353-3a2f5be94cd7?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
       slug: 'health-wellness',
-      bg_color: 'bg-health-light'
+      bg_color: 'bg-health-light',
+      icon: <Heart className="h-6 w-6" />,
+      accent_color: 'from-health/80 to-health/20'
     },
     {
       id: '2',
@@ -56,7 +65,9 @@ const FeaturedCategories = () => {
       description: 'Access top resources for real estate investment and education.',
       image_url: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
       slug: 'real-estate',
-      bg_color: 'bg-real-estate-light'
+      bg_color: 'bg-real-estate-light',
+      icon: <Home className="h-6 w-6" />,
+      accent_color: 'from-[#D2B48C]/80 to-[#D2B48C]/20'
     }
   ];
 
@@ -69,61 +80,108 @@ const FeaturedCategories = () => {
   }
 
   return (
-    <section className="py-16 bg-gray-50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold mb-2">Explore Categories</h2>
-          <div className="w-24 h-1 bg-primary mx-auto"></div>
-        </div>
+    <section className="py-20 bg-white relative overflow-hidden">
+      {/* Decorative elements */}
+      <div className="absolute -top-24 -right-24 w-96 h-96 bg-health/5 rounded-full blur-3xl"></div>
+      <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-[#D2B48C]/5 rounded-full blur-3xl"></div>
+      
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <MotionDiv
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 backdrop-blur-sm mb-4">
+            <Sparkles className="h-4 w-4 text-primary mr-2" />
+            <span className="text-sm font-medium text-primary">Curated Collections</span>
+          </div>
+          <h2 className="text-4xl font-bold mb-4">Explore Premium Categories</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">Discover our carefully curated collections of premium products designed to enhance your lifestyle and investments.</p>
+        </MotionDiv>
         
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             {[1, 2].map((index) => (
-              <div key={index} className="bg-white rounded-lg shadow-sm p-4">
-                <Skeleton className="h-48 w-full mb-4 rounded-md" />
-                <Skeleton className="h-6 w-1/2 mb-2" />
-                <Skeleton className="h-16 w-full" />
+              <div key={index} className="bg-white rounded-2xl shadow-lg p-6 overflow-hidden">
+                <Skeleton className="h-64 w-full mb-6 rounded-xl" />
+                <Skeleton className="h-8 w-1/2 mb-4" />
+                <Skeleton className="h-4 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-2/3 mb-6" />
+                <Skeleton className="h-12 w-1/3 rounded-full" />
               </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
-            {displayCategories.map(category => (
-              <Link 
-                key={category.id} 
-                to={`/products/${category.slug}`}
-                className="group block overflow-hidden"
-              >
-                <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300">
-                  <div className="relative">
-                    <div className="aspect-w-16 aspect-h-9 overflow-hidden">
-                      <img 
-                        src={category.image_url} 
-                        alt={category.name} 
-                        className="w-full h-72 object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div>
-                  </div>
-                  
-                  <div className="p-6">
-                    <div className="flex items-center mb-3">
-                      <div className="bg-primary/10 p-2 rounded-full mr-3">
-                        <ShoppingBag className="h-5 w-5 text-primary" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10" ref={containerRef}>
+            {displayCategories.map((category, index) => {
+              // Use default category icons if available
+              const defaultCategory = defaultCategories.find(c => c.name === category.name);
+              const icon = defaultCategory?.icon || <ShoppingBag className="h-6 w-6" />;
+              const accentColor = defaultCategory?.accent_color || 'from-primary/80 to-primary/20';
+              
+              return (
+                <MotionDiv
+                  key={category.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  viewport={{ once: true, margin: "-100px" }}
+                  whileHover={{ y: -5 }}
+                  className="group"
+                >
+                  <Link 
+                    to={`/products/${category.slug}`}
+                    className="block h-full"
+                    onMouseEnter={() => setActiveCategory(index)}
+                  >
+                    <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+                      <div className="relative">
+                        {/* Gradient overlay that changes on hover */}
+                        <div className={`absolute inset-0 bg-gradient-to-br ${accentColor} opacity-0 group-hover:opacity-70 transition-opacity duration-300 z-10`}></div>
+                        
+                        {/* Image */}
+                        <div className="h-64 overflow-hidden">
+                          <img 
+                            src={category.image_url} 
+                            alt={category.name} 
+                            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-out"
+                          />
+                        </div>
+                        
+                        {/* Floating badge */}
+                        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-4 py-1 text-sm font-medium text-gray-800 shadow-lg z-20">
+                          Premium
+                        </div>
                       </div>
-                      <h3 className="text-xl font-bold">{category.name}</h3>
+                      
+                      <div className="p-8 flex flex-col flex-grow">
+                        <div className="flex items-center mb-4">
+                          <div className={`p-3 rounded-xl ${index === activeCategory ? 'bg-gradient-to-br from-primary to-primary/70' : 'bg-primary/10'} text-white mr-4 transition-all duration-300 group-hover:bg-gradient-to-br group-hover:from-primary group-hover:to-primary/70`}>
+                            {icon}
+                          </div>
+                          <h3 className="text-2xl font-bold group-hover:text-primary transition-colors duration-300">{category.name}</h3>
+                        </div>
+                        
+                        <p className="text-gray-600 mb-6 flex-grow">{category.description}</p>
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center text-primary font-medium group-hover:text-primary transition-colors duration-300">
+                            <span>Explore Collection</span>
+                            <ArrowRight className="ml-2 h-5 w-5 transform group-hover:translate-x-1 transition-transform duration-300" />
+                          </div>
+                          
+                          <div className="bg-gray-100 px-3 py-1 rounded-full text-xs font-medium text-gray-600">
+                            20+ Products
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-gray-600 text-sm">{category.description}</p>
-                    <div className="mt-4 text-primary font-medium flex items-center">
-                      <span>Browse Products</span>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                  </Link>
+                </MotionDiv>
+              );
+            })}
           </div>
         )}
       </div>

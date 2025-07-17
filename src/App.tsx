@@ -13,7 +13,9 @@ import ProductDetail from "./pages/ProductDetail";
 import SellerDashboard from "./pages/SellerDashboard";
 import SellerProducts from "./pages/SellerProducts";
 import SellerInsights from "./pages/SellerInsights";
+import SellerProfile from "./pages/SellerProfile";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
+import AffiliateProfile from "./pages/AffiliateProfile";
 import AffiliateProducts from "./pages/AffiliateProducts";
 import AffiliateAnalytics from "./pages/AffiliateAnalytics";
 import AffiliateLinks from "./pages/AffiliateLinks";
@@ -36,10 +38,20 @@ import AdminProducts from "./pages/AdminProducts";
 import AdminAffiliates from "./pages/AdminAffiliates";
 import AdminFlagged from "./pages/AdminFlagged";
 import AdminFlaggedDetails from "./pages/AdminFlaggedDetails";
+import AdminUsers from "./pages/AdminUsers";
+import AdminReports from "./pages/AdminReports";
 import AffiliateGenerateLink from "./pages/AffiliateGenerateLink";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderConfirmation from "./pages/OrderConfirmation";
+import TermsOfService from "./pages/legal/TermsOfService";
+import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
+import RefundPolicy from "./pages/legal/RefundPolicy";
+import CookiePolicy from "./pages/legal/CookiePolicy";
+import AboutUs from "./pages/AboutUs";
+import Contact from "./pages/Contact";
+import SellerResources from "./pages/seller/SellerResources";
+import AffiliateResources from "./pages/affiliate/AffiliateResources";
 import { useEffect } from "react";
 import { useLocation, useSearchParams, Outlet } from "react-router-dom";
 import api from "./services/api";
@@ -121,7 +133,7 @@ const RequireAuth = ({ allowedRoles }: { allowedRoles: string[] }) => {
   return <Outlet />;
 };
 
-function App() {
+const App = () => {
   return (
     <BrowserRouter>
       <ErrorBoundary>
@@ -139,6 +151,16 @@ function App() {
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/order-confirmation" element={<OrderConfirmation />} />
+                  
+                  {/* Legal and Informational Pages */}
+                  <Route path="/legal/TermsOfService" element={<TermsOfService />} />
+                  <Route path="/legal/PrivacyPolicy" element={<PrivacyPolicy />} />
+                  <Route path="/legal/RefundPolicy" element={<RefundPolicy />} />
+                  <Route path="/legal/CookiePolicy" element={<CookiePolicy />} />
+                  <Route path="/AboutUs" element={<AboutUs />} />
+                  <Route path="/Contact" element={<Contact />} />
+                  <Route path="/seller/SellerResources" element={<SellerResources />} />
+                  <Route path="/affiliate/AffiliateResources" element={<AffiliateResources />} />
 
                   {/* --- Authentication Routes (Public) --- */}
                   <Route path="/auth/*" element={<AuthIndex />} />
@@ -158,6 +180,7 @@ function App() {
                   {/* Protected Seller Routes */}
                   <Route element={<RequireAuth allowedRoles={['seller']} />}>
                     <Route path="/seller/dashboard" element={<SellerDashboard />} />
+                    <Route path="/seller/profile" element={<SellerProfile />} />
                     <Route path="/seller/products" element={<SellerProducts />} />
                     <Route path="/seller/insights" element={<SellerInsights />} />
                     <Route path="/seller/settings" element={<SellerSettings />} />
@@ -166,6 +189,7 @@ function App() {
                   {/* Protected Affiliate Routes */}
                   <Route element={<RequireAuth allowedRoles={['affiliate']} />}>
                     <Route path="/affiliate/dashboard" element={<AffiliateDashboard />} />
+                    <Route path="/affiliate/profile" element={<AffiliateProfile />} />
                     <Route path="/affiliate/products" element={<AffiliateProducts />} />
                     <Route path="/affiliate/analytics" element={<AffiliateAnalytics />} />
                     <Route path="/affiliate/links" element={<AffiliateLinks />} />
@@ -177,6 +201,8 @@ function App() {
                   <Route element={<RequireAuth allowedRoles={['admin']} />}>
                     <Route path="/admin/dashboard" element={<AdminDashboard />} />
                     <Route path="/admin/products" element={<AdminProducts />} />
+                    <Route path="/admin/users" element={<AdminUsers />} />
+                    <Route path="/admin/reports" element={<AdminReports />} />
                     <Route path="/admin/affiliates" element={<AdminAffiliates />} />
                     <Route path="/admin/flagged" element={<AdminFlagged />} />
                     <Route path="/admin/flagged/:id" element={<AdminFlaggedDetails />} />

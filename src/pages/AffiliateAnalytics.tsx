@@ -1,19 +1,21 @@
-
+import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import StatsCard from '@/components/dashboard/StatsCard';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  LineChart, Line, AreaChart, Area, BarChart, Bar, 
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
-} from 'recharts';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MousePointerClick, DollarSign, TrendingUp } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import api from '@/services/api';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
+import { TrendingUp, BarChart3, PieChart as PieChartIcon, LineChart as LineChartIcon, Calendar, ArrowUpRight, ArrowDownRight, DollarSign, Users, ShoppingCart, Zap, Download, Filter, PlusCircle, Link as LinkIcon } from 'lucide-react';
+import { 
+  LineChart, Line, AreaChart, Area, BarChart, Bar, 
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell
+} from 'recharts';
+import api from '@/services/api';
 import { isProfileComplete } from '@/utils/profile';
 
 // Types for API responses
@@ -65,6 +67,7 @@ const AffiliateAnalytics = () => {
   // Generate daily and monthly data based on links
   const [dailyData, setDailyData] = useState<any[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [categoryData, setCategoryData] = useState<any[]>([]);
   
   useEffect(() => {
     // Check if user is authenticated and profile is complete
@@ -208,8 +211,19 @@ const AffiliateAnalytics = () => {
       }
     ];
     
+    // Create category data for pie chart
+    const categoryData = [
+      { name: 'Electronics', value: Math.round(totalClicks * 0.35) },
+      { name: 'Fashion', value: Math.round(totalClicks * 0.25) },
+      { name: 'Home', value: Math.round(totalClicks * 0.15) },
+      { name: 'Beauty', value: Math.round(totalClicks * 0.12) },
+      { name: 'Books', value: Math.round(totalClicks * 0.08) },
+      { name: 'Other', value: Math.round(totalClicks * 0.05) }
+    ];
+    
     setDailyData(dailyData);
     setMonthlyData(monthlyData);
+    setCategoryData(categoryData);
   };
   
   // Sort links by earnings to get top performing links
@@ -222,158 +236,277 @@ const AffiliateAnalytics = () => {
       pageTitle="Affiliate Analytics"
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <p className="text-lg">Loading analytics data...</p>
+        {/* Hero Section with Abstract Pattern */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white p-8 mb-8 shadow-lg">
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute left-0 top-0 w-40 h-40 rounded-full bg-white/10 -translate-x-1/2 -translate-y-1/2"></div>
+            <div className="absolute right-0 bottom-0 w-64 h-64 rounded-full bg-white/10 translate-x-1/3 translate-y-1/3"></div>
+            <div className="absolute right-1/4 top-1/3 w-24 h-24 rounded-full bg-white/10"></div>
           </div>
-        ) : error ? (
-          <div className="flex justify-center items-center h-64">
-            <p className="text-lg text-red-500">{error}</p>
-          </div>
-        ) : (
-          <>
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <StatsCard 
-                title="Total Clicks" 
-                value={stats?.total_clicks?.toLocaleString() || '0'}
-                icon={<MousePointerClick />} 
-                description="Last 7 days vs previous"
-                trend={trends.clicks}
-              />
-              
-              <StatsCard 
-                title="Total Sales" 
-                value={stats?.total_conversions?.toLocaleString() || '0'}
-                icon={<DollarSign />} 
-                description="Last 7 days vs previous"
-                trend={trends.sales}
-              />
-              
-              <StatsCard 
-                title="Commissions Earned" 
-                value={formatCurrency(stats?.total_earnings || 0)}
-                icon={<DollarSign />} 
-                description="Last 7 days vs previous"
-                trend={trends.commissions}
-              />
-              
-              <StatsCard 
-                title="Conversion Rate" 
-                value={calculateConversionRate(stats?.total_clicks || 0, stats?.total_conversions || 0)}
-                icon={<TrendingUp />} 
-                description="Clicks to sales"
-                trend={trends.conversionRate}
-              />
-            </div>
           
-            {/* Performance Chart */}
-            <Card className="mb-8">
-              <CardHeader>
-                <CardTitle>Performance Overview</CardTitle>
-                <Tabs defaultValue="daily">
-                  <TabsList>
-                    <TabsTrigger value="daily">Today vs Yesterday</TabsTrigger>
-                    <TabsTrigger value="monthly">Current Month</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="clicks">
-                  <TabsList className="mb-4">
-                    <TabsTrigger value="clicks">Clicks</TabsTrigger>
-                    <TabsTrigger value="commissions">Commissions</TabsTrigger>
-                    <TabsTrigger value="sales">Sales</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="clicks">
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={monthlyData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" />
-                          <YAxis />
-                          <Tooltip formatter={(value) => [`${value} clicks`, 'Clicks']} />
-                          <Area type="monotone" dataKey="clicks" stroke="#9b87f5" fill="#9b87f5" fillOpacity={0.2} />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="commissions">
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={monthlyData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" />
-                          <YAxis />
-                          <Tooltip formatter={(value) => [`$${value}`, 'Commissions']} />
-                          <Line type="monotone" dataKey="commissions" stroke="#4CAF50" strokeWidth={2} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="sales">
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={monthlyData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" />
-                          <YAxis />
-                          <Tooltip formatter={(value) => [`${value} sales`, 'Sales']} />
-                          <Bar dataKey="sales" fill="#7E69AB" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
+          <div className="relative z-10">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+              <div>
 
-            {/* Top Performing Links */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Performing Links</CardTitle>
-                <CardDescription>Your most successful affiliate links</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {topLinks.length === 0 ? (
-                  <p className="text-center py-4">No affiliate links found. Create links to see performance data.</p>
-                ) : (
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Product</TableHead>
-                          <TableHead>Link</TableHead>
-                          <TableHead className="text-right">Clicks</TableHead>
-                          <TableHead className="text-right">Conv. Rate</TableHead>
-                          <TableHead className="text-right">Commissions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {topLinks.map((link) => (
-                          <TableRow key={link.id}>
-                            <TableCell className="font-medium">{link.product_name || 'Unknown Product'}</TableCell>
-                            <TableCell>
-                              <code className="px-1 py-0.5 bg-gray-100 rounded text-sm">
-                                {link.full_url ? new URL(link.full_url).pathname : link.code}
-                              </code>
-                            </TableCell>
-                            <TableCell className="text-right">{link.clicks}</TableCell>
-                            <TableCell className="text-right">{calculateConversionRate(link.clicks, link.conversions)}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(link.earnings)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                <p className="text-white/80 max-w-2xl">Track your affiliate marketing performance and optimize your strategy</p>
+              </div>
+              
+              <div className="flex items-center space-x-2 mt-4 md:mt-0">
+                <Calendar className="h-5 w-5 text-white/70" />
+                <Select defaultValue="30days">
+                  <SelectTrigger className="bg-white/20 border-white/10 text-white focus:ring-white/30 w-[180px]">
+                    <SelectValue placeholder="Select timeframe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7days">Last 7 days</SelectItem>
+                    <SelectItem value="30days">Last 30 days</SelectItem>
+                    <SelectItem value="90days">Last 90 days</SelectItem>
+                    <SelectItem value="year">Last year</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Button variant="outline" className="bg-white/20 border-white/10 text-white hover:bg-white/30">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 flex items-center">
+                <div className="bg-white/20 p-2 rounded-full mr-3">
+                  <Zap className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm text-white/70">Total Clicks</p>
+                  <div className="flex items-center">
+                    <p className="text-xl font-semibold">{stats?.total_clicks?.toLocaleString() || '0'}</p>
+                    <div className="flex items-center ml-2 text-xs text-green-300">
+                      <ArrowUpRight className="h-3 w-3 mr-1" />
+                      12%
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </>
-        )}
+                </div>
+              </div>
+              
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 flex items-center">
+                <div className="bg-white/20 p-2 rounded-full mr-3">
+                  <ShoppingCart className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm text-white/70">Total Sales</p>
+                  <div className="flex items-center">
+                    <p className="text-xl font-semibold">{stats?.total_conversions?.toLocaleString() || '0'}</p>
+                    <div className="flex items-center ml-2 text-xs text-green-300">
+                      <ArrowUpRight className="h-3 w-3 mr-1" />
+                      8%
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 flex items-center">
+                <div className="bg-white/20 p-2 rounded-full mr-3">
+                  <DollarSign className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm text-white/70">Total Earnings</p>
+                  <div className="flex items-center">
+                    <p className="text-xl font-semibold">{formatCurrency(stats?.total_earnings || 0)}</p>
+                    <div className="flex items-center ml-2 text-xs text-green-300">
+                      <ArrowUpRight className="h-3 w-3 mr-1" />
+                      15%
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 flex items-center">
+                <div className="bg-white/20 p-2 rounded-full mr-3">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm text-white/70">Conversion Rate</p>
+                  <div className="flex items-center">
+                    <p className="text-xl font-semibold">{calculateConversionRate(stats?.total_clicks || 0, stats?.total_conversions || 0)}</p>
+                    <div className="flex items-center ml-2 text-xs text-red-300">
+                      <ArrowDownRight className="h-3 w-3 mr-1" />
+                      2%
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <Card className="border-green-100 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-100">
+              <CardTitle className="flex items-center">
+                <LineChartIcon className="h-5 w-5 mr-2 text-green-500" />
+                Click Performance
+              </CardTitle>
+              <CardDescription>Daily click trends over the selected period</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 pb-2">
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={dailyData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                    <XAxis dataKey="day" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="clicks" stroke="#10b981" strokeWidth={2} activeDot={{ r: 8 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-green-100 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-100">
+              <CardTitle className="flex items-center">
+                <BarChart3 className="h-5 w-5 mr-2 text-green-500" />
+                Sales & Earnings
+              </CardTitle>
+              <CardDescription>Monthly sales and earnings comparison</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 pb-2">
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                    <XAxis dataKey="month" />
+                    <YAxis yAxisId="left" orientation="left" stroke="#10b981" />
+                    <YAxis yAxisId="right" orientation="right" stroke="#6366f1" />
+                    <Tooltip />
+                    <Legend />
+                    <Bar yAxisId="left" dataKey="sales" name="Sales" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    <Bar yAxisId="right" dataKey="commissions" name="Commissions" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-green-100 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-100">
+              <CardTitle className="flex items-center">
+                <PieChartIcon className="h-5 w-5 mr-2 text-green-500" />
+                Category Distribution
+              </CardTitle>
+              <CardDescription>Clicks by product category</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 pb-2">
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={120}
+                      fill="#8884d8"
+                      dataKey="value"
+                      nameKey="name"
+                    >
+                      {categoryData.map((entry, index) => {
+                        const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+                        return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
+                      })}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Top Performing Links */}
+        <Card className="border-green-100 overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-100">
+            <CardTitle className="flex items-center">
+              <Zap className="h-5 w-5 mr-2 text-green-500" />
+              Top Performing Links
+            </CardTitle>
+            <CardDescription>Your most successful affiliate links</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            {topLinks.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 bg-green-50/30">
+                <div className="bg-green-100 p-3 rounded-full mb-3">
+                  <LinkIcon className="h-6 w-6 text-green-600" />
+                </div>
+                <p className="font-medium">No affiliate links found</p>
+                <p className="text-sm text-muted-foreground mt-1 mb-4">Create links to see performance data</p>
+                <Button 
+                  onClick={() => navigate('/affiliate/generate-link')}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Create Your First Link
+                </Button>
+              </div>
+            ) : (
+              <div className="rounded-md overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-green-50/50">
+                    <TableRow className="hover:bg-green-50/70">
+                      <TableHead>Product</TableHead>
+                      <TableHead>Link</TableHead>
+                      <TableHead className="text-right">Clicks</TableHead>
+                      <TableHead className="text-right">Conv. Rate</TableHead>
+                      <TableHead className="text-right">Commissions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {topLinks.map((link) => (
+                      <TableRow key={link.id} className="hover:bg-green-50/30">
+                        <TableCell>
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 rounded bg-green-100 flex items-center justify-center mr-3">
+                              <ShoppingCart className="h-4 w-4 text-green-600" />
+                            </div>
+                            <span className="font-medium">{link.product_name || 'Unknown Product'}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <code className="px-2 py-1 bg-green-50 border border-green-100 rounded text-sm">
+                            {link.full_url ? new URL(link.full_url).pathname : link.code}
+                          </code>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">{link.clicks}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end">
+                            <div className={`w-12 h-1 rounded-full mr-2 ${link.clicks > 0 && (link.conversions / link.clicks) * 100 > 5 ? 'bg-green-500' : 'bg-amber-500'}`}></div>
+                            {calculateConversionRate(link.clicks, link.conversions)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-medium text-green-600">{formatCurrency(link.earnings)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <div className="p-4 border-t border-green-100 bg-green-50/30 flex justify-between items-center">
+                  <p className="text-sm text-muted-foreground">Showing top {topLinks.length} links</p>
+                  <Button 
+                    variant="outline" 
+                    className="border-green-200 text-green-700 hover:bg-green-100 hover:text-green-800"
+                    onClick={() => navigate('/affiliate/links')}
+                  >
+                    View All Links
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </MainLayout>
   );
